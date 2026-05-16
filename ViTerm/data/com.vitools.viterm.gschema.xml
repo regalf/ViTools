@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="com.vitools.viterm" path="/com/vitools/viterm/">
+    <key name="dark-theme" type="b">
+      <default>true</default>
+      <summary>Dark theme</summary>
+      <description>Whether to use dark theme</description>
+    </key>
+    <key name="opacity" type="d">
+      <default>1.0</default>
+      <summary>Window opacity</summary>
+      <description>Window opacity value</description>
+    </key>
+    <key name="font-family" type="s">
+      <default>'Monospace'</default>
+      <summary>Font family</summary>
+      <description>Terminal font family</description>
+    </key>
+    <key name="font-size" type="i">
+      <default>12</default>
+      <summary>Font size</summary>
+      <description>Terminal font size</description>
+    </key>
+    <key name="bg-color" type="s">
+      <default>'#000000'</default>
+      <summary>Background color</summary>
+      <description>Terminal background color</description>
+    </key>
+  </schema>
+</schemalist>
