@@ -1,5 +1,30 @@
 # ViTools
 
+> **Vibe Coding Challenge**: Can we build a real development suite using only free AI models? This project is the answer.
+
+## About
+
+ViTools is an experiment in **vibe coding** — a challenge to see what's possible when you pair free-tier generative AI services with tools like [OpenCode](https://opencode.ai). No paid APIs, no premium models. Just curiosity, experimentation, and fun.
+
+The goal? Build a complete Linux desktop development suite from scratch, one tool at a time, powered entirely by AI-assisted coding.
+
+## Roadmap
+
+### Current
+- **[ViTerm](ViTerm/)** — A modern terminal emulator with tabs, drag & drop, zoom, and full customization
+
+### Coming Soon
+- **ViEdit** — A lightweight text editor for quick edits and note-taking
+- **ViStudio** — A full-featured IDE with plugin support, code navigation, and integrated tools
+
+### Planned
+- File manager integration
+- Debugger frontend
+- Git GUI client
+- And more...
+
+---
+
 A suite of modern Linux desktop utilities built with **GTK4** and **C++20**.
 
 ## Tools
