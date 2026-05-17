@@ -96,7 +96,7 @@ ViTools/
 │   ├── src/             # C++ source files
 │   ├── data/            # GSettings schema
 │   ├── meson.build      # Build configuration
-│   └── DEVELOPER_GUIDE.md
+│   └── AGENTS.md        # AI agent development guide
 └── ViEdit/              # Text editor
     ├── src/             # C++ source files
     ├── data/            # GSettings schema
