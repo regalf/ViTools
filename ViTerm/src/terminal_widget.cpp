@@ -1,4 +1,5 @@
 #include "terminal_widget.hpp"
+#include "config.hpp"
 #include <giomm/file.h>
 #include <gtkmm/eventcontrollermotion.h>
 #include <iostream>
@@ -132,6 +133,9 @@ void TerminalWidget::zoom_font(int delta) {
         vte_terminal_set_font(m_terminal, font_desc);
         pango_font_description_free(font_desc);
     }
+    auto& cfg = Config::instance();
+    cfg.font_size = m_font_size;
+    cfg.save();
 }
 
 void TerminalWidget::set_background_color(const std::string& color) {

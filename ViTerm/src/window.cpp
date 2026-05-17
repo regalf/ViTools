@@ -2,6 +2,7 @@
 #include "terminal_widget.hpp"
 #include "preferences_dialog.hpp"
 #include "shortcuts_dialog.hpp"
+#include "about_dialog.hpp"
 #include "config.hpp"
 #include <gtkmm/label.h>
 #include <gtkmm/box.h>
@@ -85,12 +86,6 @@ void Window::setup_headerbar() {
     auto* sep1 = Gtk::make_managed<Gtk::Separator>(Gtk::Orientation::HORIZONTAL);
     m_menu_box->append(*sep1);
 
-    auto* build_info_label = Gtk::make_managed<Gtk::Label>("ViTerm v0.1.0");
-    build_info_label->set_halign(Gtk::Align::CENTER);
-    build_info_label->set_margin_top(5);
-    build_info_label->set_margin_bottom(5);
-    m_menu_box->append(*build_info_label);
-
     auto* sep2 = Gtk::make_managed<Gtk::Separator>(Gtk::Orientation::HORIZONTAL);
     m_menu_box->append(*sep2);
 
@@ -102,6 +97,15 @@ void Window::setup_headerbar() {
         m_popover->popdown();
     });
     m_menu_box->append(*shortcuts_btn);
+
+    auto* about_btn = Gtk::make_managed<Gtk::Button>("About ViTerm");
+    about_btn->signal_clicked().connect([this]() {
+        auto* dialog = new AboutDialog(*this);
+        dialog->signal_hide().connect([dialog]() { delete dialog; });
+        dialog->show();
+        m_popover->popdown();
+    });
+    m_menu_box->append(*about_btn);
 
     m_popover = Gtk::make_managed<Gtk::Popover>();
     m_popover->set_parent(*m_menu_button);
@@ -241,6 +245,11 @@ void Window::open_preferences() {
     auto& cfg = Config::instance();
     auto* dialog = new PreferencesDialog(*this, cfg.font_family, cfg.font_size, cfg.bg_color, cfg.opacity);
     dialog->signal_hide().connect([this, dialog]() {
+        if (!dialog->was_applied()) {
+            delete dialog;
+            return;
+        }
+
         auto& c = Config::instance();
         c.font_family = dialog->get_font_family();
         c.font_size = dialog->get_font_size();

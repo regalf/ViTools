@@ -19,6 +19,7 @@ sources = files(
   'src/preferences_dialog.cpp',
   'src/config.cpp',
   'src/shortcuts_dialog.cpp',
+  'src/about_dialog.cpp',
 )
 
 executable('viterm',

@@ -26,6 +26,7 @@ public:
     int get_font_size() const;
     std::string get_bg_color() const;
     double get_opacity() const;
+    bool was_applied() const { return m_applied; }
 
 private:
     void setup_ui();
@@ -40,6 +41,7 @@ private:
     int m_current_size;
     std::string m_current_bg_color;
     double m_current_opacity;
+    bool m_applied = false;
 };
 
 } // namespace ViTerm

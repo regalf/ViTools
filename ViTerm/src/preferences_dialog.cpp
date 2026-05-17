@@ -36,7 +36,12 @@ void PreferencesDialog::setup_ui() {
     main_box->append(*font_label);
 
     m_font_chooser = Gtk::make_managed<Gtk::FontChooserWidget>();
-    m_font_chooser->set_font(m_current_font + " " + std::to_string(m_current_size));
+    
+    Pango::FontDescription font_desc;
+    font_desc.set_family(m_current_font);
+    font_desc.set_size(m_current_size * PANGO_SCALE);
+    m_font_chooser->set_font_desc(font_desc);
+    
     main_box->append(*m_font_chooser);
 
     auto* color_label = Gtk::make_managed<Gtk::Label>("Background Color");
@@ -78,32 +83,23 @@ void PreferencesDialog::setup_ui() {
 }
 
 void PreferencesDialog::on_response_ok() {
+    m_applied = true;
     hide();
 }
 
 void PreferencesDialog::on_response_cancel() {
-    m_font_chooser->set_font(m_current_font + " " + std::to_string(m_current_size));
-    Gdk::RGBA rgba;
-    rgba.set(m_current_bg_color);
-    m_color_button->set_rgba(rgba);
     hide();
 }
 
 std::string PreferencesDialog::get_font_family() const {
-    auto font = m_font_chooser->get_font();
-    auto desc = pango_font_description_from_string(font.c_str());
-    auto family = pango_font_description_get_family(desc);
-    std::string result(family ? family : "Monospace");
-    pango_font_description_free(desc);
-    return result;
+    auto desc = m_font_chooser->get_font_desc();
+    auto family = desc.get_family();
+    return family.empty() ? "Monospace" : family;
 }
 
 int PreferencesDialog::get_font_size() const {
-    auto font = m_font_chooser->get_font();
-    auto desc = pango_font_description_from_string(font.c_str());
-    int size = pango_font_description_get_size(desc) / PANGO_SCALE;
-    pango_font_description_free(desc);
-    return size;
+    auto desc = m_font_chooser->get_font_desc();
+    return desc.get_size() / PANGO_SCALE;
 }
 
 std::string PreferencesDialog::get_bg_color() const {
