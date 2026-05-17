@@ -12,9 +12,9 @@ The goal? Build a complete Linux desktop development suite from scratch, one too
 
 ### Current
 - **[ViTerm](ViTerm/)** — A modern terminal emulator with tabs, drag & drop, zoom, and full customization
+- **[ViEdit](ViEdit/)** — A lightweight text editor with syntax highlighting, find/replace, draft recovery, and tabbed interface
 
 ### Coming Soon
-- **ViEdit** — A lightweight text editor for quick edits and note-taking
 - **ViStudio** — A full-featured IDE with plugin support, code navigation, and integrated tools
 
 ### Planned
@@ -38,23 +38,15 @@ A modern terminal emulator featuring:
 - **Dark/Light theme** toggle
 - **Persistent configuration** saved to `~/.config/vitools/viterm.cfg`
 
-#### Quick Start
+#### ViTerm Quick Start
 ```bash
-# Build
+cd ViTerm
 meson setup builddir
 meson compile -C builddir
-
-# Run
 ./builddir/viterm
 ```
 
-#### Dependencies
-- `gtkmm-4.0` >= 4.0
-- `vte-2.91-gtk4` >= 0.68
-- `glibmm-2.68` >= 2.68
-- `meson` >= 0.59.0
-
-#### Keyboard Shortcuts
+#### ViTerm Keyboard Shortcuts
 | Shortcut | Action |
 |----------|--------|
 | `Alt + T` | New Tab |
@@ -63,14 +55,53 @@ meson compile -C builddir
 | `Ctrl + Q` | Quit |
 | `Ctrl + Scroll` | Zoom In/Out |
 
+### [ViEdit](ViEdit/)
+A lightweight text editor featuring:
+- **Tabbed interface** with custom close buttons
+- **Syntax highlighting** via GtkSourceView (C++, Python, JSON, and more)
+- **Find & Replace** with revealed search bar
+- **Draft recovery** — auto-saves unsaved work and restores on startup
+- **Go to Line**, word wrap, zoom, auto-indent
+- **Recent files** list and dark/light theme toggle
+- **Persistent settings** via GSettings
+
+#### ViEdit Quick Start
+```bash
+cd ViEdit
+meson setup builddir
+meson compile -C builddir
+./builddir/viedit
+```
+
+#### ViEdit Keyboard Shortcuts
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+N` | New file |
+| `Ctrl+O` | Open file |
+| `Ctrl+S` | Save |
+| `Ctrl+Shift+S` | Save As |
+| `Ctrl+W` | Close tab |
+| `Ctrl+Q` | Quit |
+| `Ctrl+Z/Y` | Undo/Redo |
+| `Ctrl+F` | Find |
+| `Ctrl+H` | Replace |
+| `Ctrl+G` | Go to Line |
+| `Ctrl+Scroll` | Zoom font |
+| `Alt+Left/Right` | Switch tab |
+
 ## Project Structure
 ```
 ViTools/
-└── ViTerm/              # Terminal emulator
+├── ViTerm/              # Terminal emulator
+│   ├── src/             # C++ source files
+│   ├── data/            # GSettings schema
+│   ├── meson.build      # Build configuration
+│   └── DEVELOPER_GUIDE.md
+└── ViEdit/              # Text editor
     ├── src/             # C++ source files
     ├── data/            # GSettings schema
     ├── meson.build      # Build configuration
-    └── DEVELOPER_GUIDE.md
+    └── AGENTS.md        # AI agent development guide
 ```
 
 ## License

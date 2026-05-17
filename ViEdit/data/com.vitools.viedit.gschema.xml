@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="com.vitools.viedit" path="/com/vitools/viedit/">
+    <key name="window-width" type="i">
+      <default>1024</default>
+      <summary>Window width</summary>
+    </key>
+    <key name="window-height" type="i">
+      <default>768</default>
+      <summary>Window height</summary>
+    </key>
+    <key name="window-maximized" type="b">
+      <default>false</default>
+      <summary>Window maximized state</summary>
+    </key>
+    <key name="dark-theme" type="b">
+      <default>true</default>
+      <summary>Use dark theme</summary>
+    </key>
+    <key name="font-size" type="i">
+      <default>12</default>
+      <summary>Editor font size</summary>
+    </key>
+    <key name="font-family" type="s">
+      <default>'Monospace'</default>
+      <summary>Editor font family</summary>
+    </key>
+    <key name="show-line-numbers" type="b">
+      <default>true</default>
+      <summary>Show line numbers</summary>
+    </key>
+    <key name="word-wrap" type="b">
+      <default>false</default>
+      <summary>Enable word wrap</summary>
+    </key>
+    <key name="highlight-syntax" type="b">
+      <default>true</default>
+      <summary>Enable syntax highlighting</summary>
+    </key>
+    <key name="auto-indent" type="b">
+      <default>true</default>
+      <summary>Enable auto-indent</summary>
+    </key>
+    <key name="recent-files" type="as">
+      <default>[]</default>
+      <summary>List of recently opened files</summary>
+    </key>
+    <key name="max-recent-files" type="i">
+      <default>10</default>
+      <summary>Maximum number of recent files</summary>
+    </key>
+    <key name="tab-size" type="i">
+      <default>4</default>
+      <summary>Tab size in spaces</summary>
+    </key>
+    <key name="use-spaces-for-tabs" type="b">
+      <default>true</default>
+      <summary>Insert spaces instead of tabs</summary>
+    </key>
+  </schema>
+</schemalist>
