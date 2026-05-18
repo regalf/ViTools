@@ -13,6 +13,7 @@ ViStudio è un IDE moderno costruito con Electron + React + TypeScript, ispirato
 - **Frontend**: React 18 con TypeScript
 - **Build Tool**: Vite 5
 - **Editor Engine**: Monaco Editor 0.45 (lo stesso di VS Code)
+- **Terminal Engine**: xterm.js + `child_process` (script PTY)
 - **Plugin System**: vite-plugin-electron
 
 ### Architettura a Livelli
@@ -21,7 +22,7 @@ ViStudio è un IDE moderno costruito con Electron + React + TypeScript, ispirato
 ┌─────────────────────────────────────────────┐
 │           Electron Main Process             │
 │  - Window management                        │
-│  - IPC handlers (fs, dialog, project)       │
+│  - IPC handlers (fs, dialog, project, term) │
 │  - Menu system                              │
 └──────────────────┬──────────────────────────┘
                    │ IPC (contextBridge)
@@ -36,6 +37,7 @@ ViStudio è un IDE moderno costruito con Electron + React + TypeScript, ispirato
 │  - App.tsx (state management)               │
 │  - Components (UI)                          │
 │  - Monaco Editor (code editing)             │
+│  - xterm.js (terminal)                      │
 └─────────────────────────────────────────────┘
 ```
 
@@ -51,54 +53,36 @@ ViStudio/
 │   │   ├── createWindow() - BrowserWindow config
 │   │   ├── createMenu() - Menu nativo (nascosto)
 │   │   └── IPC handlers:
-│   │       - fs:readFile, fs:writeFile, fs:readDir, fs:stat, fs:exists
+│   │       - fs:readFile, fs:writeFile, fs:readDir, fs:stat, fs:exists, fs:move
 │   │       - dialog:openFile, dialog:openFolder, dialog:saveFile
-│   │       └── project:create
+│   │       - project:create
+│   │       - folder:create, file:create
+│   │       └── terminal:start, terminal:write, terminal:resize
 │   └── preload.ts       # Bridge sicuro renderer↔main
-│       └── electronAPI esposto: fs, dialog, project, onMenuAction
+│       └── electronAPI esposto: fs, dialog, project, folder, file, terminal, onMenuAction
 │
 ├── src/
 │   ├── main.tsx         # Entry point React
 │   ├── App.tsx          # Componente principale + state management
-│   │   ├── States: sidebarOpen, folderPath, currentFile, fileContent, language, cursorPosition, isNewFile, projectConfig
-│   │   ├── Handlers: handleOpenFolder, handleCreateProject, handleOpenFile, handleFileClick, handleNewFile, handleSave, handleSaveAs, handleMenuAction
-│   │   └── Layout: MenuBar → [Sidebar + EditorPanel] → StatusBar
+│   │   ├── States: sidebarOpen, folderPath, tabs[], activeTabId, terminalVisible, ...
+│   │   ├── Handlers: handleOpenFolder, handleFileClick, handleSave, ...
+│   │   └── Layout: MenuBar → [Sidebar + (TabBar + EditorPanel + TerminalPanel)] → StatusBar
 │   │
 │   ├── components/
-│   │   ├── MenuBar.tsx       # Barra menu personalizzata (File, Edit, View, Help)
-│   │   │   ├── menuTemplate: definizione menu items
-│   │   │   ├── Dropdown menus con hover/click
-│   │   │   └── Actions: new-file, new-project, open-file, open-folder, save, save-as, toggle-sidebar, about
-│   │   │
+│   │   ├── MenuBar.tsx       # Barra menu personalizzata
 │   │   ├── Sidebar.tsx       # Sidebar laterale
-│   │   │   ├── Header "EXPLORER"
-│   │   │   ├── Pulsante "Open Folder"
-│   │   │   └── ProjectExplorer component
-│   │   │
-│   │   ├── ProjectExplorer.tsx  # Albero file/cartelle
-│   │   │   ├── FileNode interface: name, path, isDirectory, children, expanded
-│   │   │   ├── FileTreeItem: componente ricorsivo per nodi
-│   │   │   ├── loadDirectory(): carica file da fs.readDir
-│   │   │   ├── toggleDirectory(): espande/collassa cartelle
-│   │   │   ├── rootExpanded: stato cartella radice
-│   │   │   ├── Rilevamento automatico .vistproj
-│   │   │   └── Icone per tipo file (getIconForFile)
-│   │   │
+│   │   ├── ProjectExplorer.tsx  # Albero file/cartelle con drag & drop
 │   │   ├── EditorPanel.tsx   # Wrapper Monaco Editor
-│   │   │   ├── Props: filePath, fileName, content, language, onChange, showWelcome
-│   │   │   ├── Welcome screen quando nessun file aperto
-│   │   │   └── Monaco Editor options (minimap, fontSize, theme, etc.)
-│   │   │
+│   │   ├── TabBar.tsx        # Barra tab multipli (reorder, close, modified)
+│   │   ├── TerminalPanel.tsx # Wrapper xterm.js (bash shell)
 │   │   └── StatusBar.tsx     # Barra di stato in basso
-│   │       ├── Info: ViStudio logo, cursor position, encoding, line ending, language
-│   │       └── Stile: background #007acc (blu)
 │   │
 │   ├── styles/
 │   │   └── global.css        # Stili globali + scrollbar scura
 │   │
 │   └── types/
 │       └── index.ts          # TypeScript interfaces
-│           ├── FileSystemItem, OpenedFile, ProjectConfig, ProjectSettings
+│           ├── EditorTab, FileSystemItem, ProjectConfig
 │           └── ElectronAPI interface
 │
 ├── schemas/
@@ -110,7 +94,7 @@ ViStudio/
 ├── index.html                # HTML entry point
 ├── package.json              # Dependencies e scripts
 ├── tsconfig.json             # TypeScript config
-├── vite.config.ts            # Vite + Electron config
+├── vite.config.ts            # Vite + Electron config (external: ['electron', 'node-pty'])
 └── run.sh                    # Script di avvio sviluppo
 ```
 
@@ -124,12 +108,11 @@ ViStudio/
 ```typescript
 sidebarOpen: boolean          // Sidebar visibile/nascosta
 folderPath: string | null     // Percorso cartella aperta
-currentFile: string | null    // File attualmente aperto
-fileContent: string           // Contenuto del file
-language: string              // Linguaggio per syntax highlighting
-cursorPosition: {line, column}// Posizione cursore
-isNewFile: boolean            // File nuovo non salvato
-projectConfig: any            // Configurazione .vistproj
+tabs: EditorTab[]             // Array di tab aperti
+activeTabId: string | null    // ID del tab attivo
+terminalVisible: boolean      // Terminale visibile/nascosto
+refreshPath: string | null    // Trigger per refresh explorer
+// ... modali states
 ```
 
 **Flusso dati:**
@@ -137,7 +120,7 @@ projectConfig: any            // Configurazione .vistproj
 User Action → Handler → setState → Re-render → UI Update
 ```
 
-### 2. ProjectExplorer.tsx - File Tree
+### 2. ProjectExplorer.tsx - File Tree con Drag & Drop
 
 **Algoritmo di caricamento:**
 1. `folderPath` cambia → useEffect trigger
@@ -147,31 +130,39 @@ User Action → Handler → setState → Re-render → UI Update
 5. Setta `fileTree` state
 6. Controlla `.vistproj` → parse JSON → `projectConfig`
 
-**Componente ricorsivo FileTreeItem:**
-- Renderizza ogni nodo (file o cartella)
-- Cartelle: cliccabili per espandere/collassare
-- File: cliccabili per aprire (onFileClick)
-- Depth-based indentation (depth * 16px)
+**Drag & Drop Implementation:**
+- `onDragStart`: setta `dataTransfer.setData('text/plain', node.path)` e `draggedNode`
+- `onDragOver`: `e.preventDefault()`, `e.dataTransfer.dropEffect = 'move'`
+- `onDrop`: legge `e.dataTransfer.getData('text/plain')`, chiama `handleDrop`
+- `handleDrop`: chiama `electronAPI.fs.move(sourcePath, destPath)`, poi aggiorna albero selettivamente
+- Feedback visivo: bordo tratteggiato blu su cartelle target, opacità ridotta su elemento trascinato
 
-### 3. MenuBar.tsx - Custom Menu
+### 3. TabBar.tsx - Multi-Tab Management
 
-**Struttura menu:**
-```typescript
-menuTemplate = [
-  { label: 'File', items: [New File, New Project, Open File, Open Folder, Save, Save As, Exit] },
-  { label: 'Edit', items: [Undo, Redo, Cut, Copy, Paste, Find, Replace] },
-  { label: 'View', items: [Toggle Sidebar, Toggle Terminal, Command Palette, Zoom...] },
-  { label: 'Help', items: [About] }
-]
-```
+**Funzionalità:**
+- Visualizza lista tab aperti
+- Click per switchare tab attivo
+- Drag & Drop per riordinare tab
+- "×" per chiudere tab (appare su hover)
+- Pallino bianco per file modificati non salvati
 
-**Interazioni:**
-- Click su label → apre dropdown
-- Hover su menu attivo → cambia menu
-- Click outside → chiude dropdown
-- Click su item → `onAction(action)` → App.tsx handler
+### 4. TerminalPanel.tsx - Integrated Terminal
 
-### 4. EditorPanel.tsx - Monaco Editor
+**Tecnologia:**
+- **xterm.js**: Rendering terminale (stesso di VS Code)
+- **FitAddon**: Auto-resize
+- **WebLinksAddon**: Link cliccabili
+- **Backend**: `child_process` + `script` (pseudo-terminale) per evitare moduli nativi problematici
+- **Shell**: Forzata a `/bin/bash` per compatibilità
+
+**Flusso:**
+1. Componente montato → `initTerminal()`
+2. Crea istanza `Terminal` → `term.open(ref)`
+3. Chiama `electronAPI.terminal.start(cwd)`
+4. Listener `onData` riceve output dal main process → `term.write(data)`
+5. Input utente → `term.onData` → `electronAPI.terminal.write(data)`
+
+### 5. EditorPanel.tsx - Monaco Editor
 
 **Configurazione Monaco:**
 ```typescript
@@ -184,13 +175,8 @@ options: {
   bracketPairColorization: { enabled: true },
   guides: { bracketPairs: true, indentation: true },
   tabSize: 2,
-  // ... altre opzioni
 }
 ```
-
-**Welcome Screen:**
-- Mostrato quando `showWelcome = true` (nessun file aperto e non isNewFile)
-- Titolo "ViStudio", sottotitolo, shortcut hints
 
 ---
 
@@ -201,39 +187,48 @@ options: {
 **Menu Actions:**
 ```typescript
 mainWindow.webContents.send('menu:new-file')
-mainWindow.webContents.send('menu:open-file')
-// ... altre actions
+// ...
+```
+
+**Terminal Events:**
+```typescript
+mainWindow.webContents.send('terminal:data', data)
+mainWindow.webContents.send('terminal:exit', exitCode)
 ```
 
 ### Renderer → Main (via electronAPI)
 
 **File System:**
 ```typescript
-window.electronAPI.fs.readFile(path)     // → {success, content, error}
-window.electronAPI.fs.writeFile(path, content)  // → {success, error}
-window.electronAPI.fs.readDir(path)      // → {success, items[], error}
-window.electronAPI.fs.stat(path)         // → {success, stats, error}
-window.electronAPI.fs.exists(path)       // → boolean
+window.electronAPI.fs.readFile(path)
+window.electronAPI.fs.writeFile(path, content)
+window.electronAPI.fs.readDir(path)
+window.electronAPI.fs.stat(path)
+window.electronAPI.fs.exists(path)
+window.electronAPI.fs.move(source, dest)
+```
+
+**Terminal:**
+```typescript
+window.electronAPI.terminal.start(cwd)      // Avvia shell
+window.electronAPI.terminal.write(data)     // Invia input
+window.electronAPI.terminal.resize(cols, rows) // Resize
+window.electronAPI.terminal.onData(callback) // Ricevi output
+window.electronAPI.terminal.onExit(callback) // Gestione uscita
 ```
 
 **Dialogs:**
 ```typescript
-window.electronAPI.dialog.openFile()     // → string | null
-window.electronAPI.dialog.openFolder()   // → string | null
-window.electronAPI.dialog.saveFile(defaultPath?)  // → string | null
+window.electronAPI.dialog.openFile()
+window.electronAPI.dialog.openFolder()
+window.electronAPI.dialog.saveFile(defaultPath?)
 ```
 
-**Project:**
+**Project/File/Folder:**
 ```typescript
-window.electronAPI.project.create()      // → string | null (project path)
-```
-
-**Menu Listener:**
-```typescript
-const cleanup = window.electronAPI.onMenuAction((action) => {
-  // handle action
-})
-return cleanup  // cleanup on unmount
+window.electronAPI.project.create()
+window.electronAPI.folder.create(name, parentPath?)
+window.electronAPI.file.create(name, parentPath)
 ```
 
 ---
@@ -260,15 +255,6 @@ return cleanup  // cleanup on unmount
   "exclude": ["node_modules", "dist", ".git"]
 }
 ```
-
-**Creazione progetto (project:create IPC):**
-1. Dialog per scegliere cartella padre
-2. Input box per nome progetto
-3. Crea cartella: `parentDir/projectName`
-4. Crea sottocartella: `src/`
-5. Scrive `.vistproj` con template
-6. Scrive `src/main.ts` vuoto
-7. Restituisce percorso progetto
 
 ---
 
@@ -318,9 +304,9 @@ npm run electron:dev
 - **Electron main/preload**: richiede restart (vite-plugin-electron rebuild)
 
 ### Debug
-- **DevTools**: aperte automaticamente in dev mode
+- **DevTools**: aperte automaticamente in dev mode (`mainWindow.webContents.openDevTools()`)
 - **Console logs**: `[RENDERER]` prefix per logs dal renderer
-- **Main process logs**: visibili nel terminale
+- **Main process logs**: visibili nel terminale e in `/tmp/vistudio.log`
 
 ---
 
@@ -342,11 +328,6 @@ npm run electron:dev
 2. Esporta come default
 3. Importa in `App.tsx` o componente padre
 4. Aggiungi nel JSX tree
-
-### Modificare lo stile
-1. Stili inline: nel componente React
-2. Stili globali: `src/styles/global.css`
-3. CSS modules: crea `.css` accanto al componente
 
 ---
 
@@ -370,6 +351,19 @@ npm run electron:dev
 - Vite usa porta 5173
 - Se occupata, Vite usa porta successiva (5174, etc.)
 - `run.sh` kill processi esistenti prima di avviare
+
+### Drag & Drop
+- Il drag & drop usa `dataTransfer.setData` per passare il percorso
+- `setTimeout(() => setDraggedNode(node), 0)` previene re-render prematuri che cancellano il drag
+- `WebkitUserDrag: 'element'` abilita il drag nativo su WebKit/Electron
+- `pointerEvents: 'none'` su icone/frecce previene interferenze con il drag
+- `onRefresh()` deve essere chiamato dopo `fs.move` per aggiornare l'albero
+
+### Terminal & Native Modules
+- `node-pty` (modulo nativo) fallisce la compilazione con Vite/Electron system-installed
+- **Workaround**: Usato `child_process` + comando `script` (Linux) per creare pseudo-terminale
+- Shell forzata a `/bin/bash` per evitare problemi di input con `fish`
+- `process` non è disponibile nel renderer (contextIsolation=true), usare fallback nel main process
 
 ---
 
@@ -396,21 +390,23 @@ npm run electron:dev
 
 ## 🔮 Future Extensions (Planned)
 
-### Fase 3: Tab Multipli
+### ✅ Fase 3: Tab Multipli (COMPLETATO)
 - Array di file aperti
 - Tab bar component
 - Switch tra tab
 - Stato "modificato" (dot sul tab)
+- Drag & Drop per riordinare
 
 ### Fase 4: Extension API
 - Extension host sandboxato
 - API per: syntax highlighting, autocompletamento, compilatori
 - Formato estensione: `.vix` package
 
-### Fase 5: Terminale Integrato
+### ✅ Fase 5: Terminale Integrato (COMPLETATO)
 - xterm.js per terminale
 - Panel in basso
 - Comandi build/run
+- Pseudo-terminale con `script`
 
 ### Fase 6: Command Palette
 - Ctrl+Shift+P
@@ -431,9 +427,16 @@ npm run electron:dev
 | Apri cartella | App.tsx | handleOpenFolder |
 | Crea progetto | electron/main.ts | ipcMain.handle('project:create') |
 | Leggi file | electron/main.ts | ipcMain.handle('fs:readFile') |
+| Sposta file | electron/main.ts | ipcMain.handle('fs:move') |
+| Crea cartella | electron/main.ts | ipcMain.handle('folder:create') |
+| Crea file | electron/main.ts | ipcMain.handle('file:create') |
+| Avvia terminale | electron/main.ts | ipcMain.handle('terminal:start') |
+| Scrivi terminale | electron/main.ts | ipcMain.handle('terminal:write') |
 | Menu actions | MenuBar.tsx | menuTemplate |
-| File tree | ProjectExplorer.tsx | loadDirectory, FileTreeItem |
+| File tree | ProjectExplorer.tsx | loadDirectory, FileTreeItem, handleDrop |
+| Tab bar | TabBar.tsx | TabBar component |
 | Editor | EditorPanel.tsx | Monaco Editor wrapper |
+| Terminal | TerminalPanel.tsx | xterm.js wrapper |
 | Status bar | StatusBar.tsx | Info display |
 | Sidebar | Sidebar.tsx | Layout container |
 | Types | src/types/index.ts | TypeScript interfaces |
@@ -455,9 +458,17 @@ Quando modifichi il codice, verifica:
 - [ ] Save/Save As funzionano
 - [ ] Scrollbar è scura
 - [ ] Cartella radice è collassabile
+- [ ] Drag & drop sposta file/cartelle correttamente
+- [ ] Explorer si aggiorna dopo drag & drop
+- [ ] Pulsanti 📄+ e 📁+ creano file/cartelle
+- [ ] Modali input funzionano correttamente
+- [ ] **Tab Multipli**: Apertura, switch, chiusura, riordino funzionano
+- [ ] **Stato Modificato**: Pallino bianco appare su modifiche non salvate
+- [ ] **Terminale**: Si apre, mostra prompt, accetta input, esegue comandi
+- [ ] **Terminale**: Usa bash correttamente (no fish issues)
 - [ ] DevTools non mostrano errori
 
 ---
 
 *Ultimo aggiornamento: 2026-05-18*
-*Versione: 0.2.0 (Fase 2 completata)*
+*Versione: 0.5.0 (Tab Multipli, Terminale Integrato, Drag & Drop migliorato)*

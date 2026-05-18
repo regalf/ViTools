@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron'
 import { join } from 'path'
-import { readFileSync, writeFileSync, statSync, readdirSync, existsSync, mkdirSync } from 'fs'
+import { readFileSync, writeFileSync, statSync, readdirSync, existsSync, mkdirSync, renameSync } from 'fs'
+import { spawn } from 'child_process'
 
 // GPU fixes - must be set before app ready
 app.commandLine.appendSwitch('no-sandbox')
@@ -90,7 +91,7 @@ function createWindow() {
 
   mainWindow.setMenuBarVisibility(false)
 
-  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
     console.error('Failed to load:', errorCode, errorDescription)
   })
 
@@ -101,6 +102,7 @@ function createWindow() {
   if (process.env.VITE_DEV_SERVER_URL) {
     console.log('Loading dev server:', process.env.VITE_DEV_SERVER_URL)
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
+    mainWindow.webContents.openDevTools()
   } else {
     console.log('Loading production build')
     mainWindow.loadFile(join(__dirname, '../dist/index.html'))
@@ -157,6 +159,21 @@ ipcMain.handle('fs:exists', async (_, filePath: string) => {
   return existsSync(filePath)
 })
 
+ipcMain.handle('fs:move', async (_, sourcePath: string, destPath: string) => {
+  try {
+    if (!existsSync(sourcePath)) {
+      return { success: false, error: 'Source file not found' }
+    }
+    if (existsSync(destPath)) {
+      return { success: false, error: 'Destination already exists' }
+    }
+    renameSync(sourcePath, destPath)
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+})
+
 ipcMain.handle('dialog:openFile', async () => {
   const result = await dialog.showOpenDialog(mainWindow!, {
     properties: ['openFile'],
@@ -189,15 +206,19 @@ ipcMain.handle('project:create', async () => {
     if (result.canceled || !result.filePaths[0]) return null
 
     const parentDir = result.filePaths[0]
-    const { response, filePath } = await dialog.showInputBox(mainWindow!, {
+    const { response } = await dialog.showMessageBox(mainWindow!, {
+      type: 'question',
+      buttons: ['Create', 'Cancel'],
+      defaultId: 0,
+      cancelId: 1,
       title: 'Project Name',
-      prompt: 'Enter the name for your new project',
-      defaultText: 'MyProject'
+      message: 'Enter the name for your new project',
+      detail: 'Default: MyProject',
+      noLink: true
     })
-    if (response !== 0 || !filePath) return null
-
-    const projectName = filePath.trim()
-    if (!projectName) return null
+    
+    const projectName = 'MyProject'
+    if (response !== 0) return null
 
     const projectDir = join(parentDir, projectName)
     if (existsSync(projectDir)) {
@@ -239,6 +260,147 @@ ipcMain.handle('project:create', async () => {
     console.error('Failed to create project:', error)
     return null
   }
+})
+
+ipcMain.handle('folder:create', async (_, folderName: string, parentPath?: string) => {
+  try {
+    if (!folderName) return null
+
+    const targetPath = parentPath || (await dialog.showOpenDialog(mainWindow!, {
+      properties: ['openDirectory'],
+      title: 'Select parent folder'
+    })).filePaths[0]
+
+    if (!targetPath) return null
+
+    const newFolderPath = join(targetPath, folderName)
+    if (existsSync(newFolderPath)) {
+      await dialog.showMessageBox(mainWindow!, {
+        type: 'error',
+        title: 'Error',
+        message: `Folder "${folderName}" already exists`
+      })
+      return null
+    }
+
+    mkdirSync(newFolderPath, { recursive: true })
+    return newFolderPath
+  } catch (error: any) {
+    console.error('Failed to create folder:', error)
+    return null
+  }
+})
+
+ipcMain.handle('file:create', async (_, fileName: string, parentPath: string) => {
+  try {
+    if (!fileName || !parentPath) return null
+    const newFilePath = join(parentPath, fileName)
+    if (existsSync(newFilePath)) {
+      await dialog.showMessageBox(mainWindow!, {
+        type: 'error',
+        title: 'Error',
+        message: `File "${fileName}" already exists`
+      })
+      return null
+    }
+    writeFileSync(newFilePath, '', 'utf-8')
+    return newFilePath
+  } catch (error: any) {
+    console.error('Failed to create file:', error)
+    return null
+  }
+})
+
+// Terminal IPC Handlers
+let terminalProcess: ReturnType<typeof spawn> | null = null
+
+ipcMain.handle('terminal:start', async (_, cwd: string) => {
+  try {
+    console.log('[TERMINAL] ========== STARTING TERMINAL ==========')
+    console.log('[TERMINAL] CWD:', cwd)
+    console.log('[TERMINAL] Shell:', process.env.SHELL)
+    
+    if (terminalProcess) {
+      console.log('[TERMINAL] Killing existing process')
+      terminalProcess.kill()
+    }
+
+    const shell = process.platform === 'win32' ? 'powershell.exe' : '/bin/bash'
+    console.log('[TERMINAL] Using shell:', shell)
+    
+    // Use 'script' to create a pseudo-terminal on Linux/Mac
+    const args = process.platform === 'win32' 
+      ? [] 
+      : ['-q', '-c', shell, '/dev/null']
+    
+    const command = process.platform === 'win32' ? shell : 'script'
+    console.log('[TERMINAL] Command:', command, 'Args:', args)
+
+    terminalProcess = spawn(command, args, {
+      cwd: cwd || process.env.HOME,
+      env: { ...process.env, TERM: 'xterm-256color' },
+      stdio: ['pipe', 'pipe', 'pipe']
+    })
+
+    console.log('[TERMINAL] Process spawned with PID:', terminalProcess.pid)
+
+    terminalProcess.stdout?.on('data', (data) => {
+      const text = data.toString()
+      console.log('[TERMINAL STDOUT]', JSON.stringify(text))
+      mainWindow?.webContents.send('terminal:data', text)
+    })
+
+    terminalProcess.stderr?.on('data', (data) => {
+      const text = data.toString()
+      console.log('[TERMINAL STDERR]', JSON.stringify(text))
+      mainWindow?.webContents.send('terminal:data', text)
+    })
+
+    terminalProcess.on('exit', (code) => {
+      console.log('[TERMINAL] Process exited with code:', code)
+      mainWindow?.webContents.send('terminal:exit', code)
+      terminalProcess = null
+    })
+
+    terminalProcess.on('error', (err) => {
+      console.error('[TERMINAL ERROR]', err)
+      mainWindow?.webContents.send('terminal:data', `\r\nError: ${err.message}\r\n`)
+    })
+
+    // Send initial welcome message to test output
+    setTimeout(() => {
+      if (terminalProcess) {
+        console.log('[TERMINAL] Sending initial prompt test')
+        mainWindow?.webContents.send('terminal:data', 'ViStudio Terminal Ready\r\n$ ')
+      }
+    }, 500)
+
+    return { success: true }
+  } catch (error: any) {
+    console.error('[TERMINAL] Failed to start:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+ipcMain.handle('terminal:write', async (_, data: string) => {
+  console.log('[TERMINAL WRITE]', JSON.stringify(data))
+  if (terminalProcess && terminalProcess.stdin) {
+    terminalProcess.stdin.write(data)
+    console.log('[TERMINAL] Data written to stdin')
+  } else {
+    console.log('[TERMINAL] No process or stdin available')
+  }
+  return { success: true }
+})
+
+ipcMain.handle('terminal:resize', async () => {
+  return { success: true }
+})
+
+// Logger IPC for debugging renderer issues
+ipcMain.handle('log', async (_, message: string) => {
+  console.log('[RENDERER LOG]', message)
+  return { success: true }
 })
 
 app.whenReady().then(() => {

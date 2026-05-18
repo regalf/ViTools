@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 
 interface MenuItem {
-  label: string
+  label?: string
   action?: string
   shortcut?: string
   separator?: boolean
@@ -16,6 +16,7 @@ const menuTemplate: { label: string; items: MenuItem[] }[] = [
     label: 'File',
     items: [
       { label: 'New File', action: 'menu:new-file', shortcut: 'Ctrl+N' },
+      { label: 'New Folder...', action: 'menu:new-folder' },
       { label: 'New Project...', action: 'menu:new-project' },
       { separator: true },
       { label: 'Open File...', action: 'menu:open-file', shortcut: 'Ctrl+O' },

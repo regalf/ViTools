@@ -7,7 +7,8 @@ try {
       writeFile: (filePath: string, content: string) => ipcRenderer.invoke('fs:writeFile', filePath, content),
       readDir: (dirPath: string) => ipcRenderer.invoke('fs:readDir', dirPath),
       stat: (filePath: string) => ipcRenderer.invoke('fs:stat', filePath),
-      exists: (filePath: string) => ipcRenderer.invoke('fs:exists', filePath)
+      exists: (filePath: string) => ipcRenderer.invoke('fs:exists', filePath),
+      move: (sourcePath: string, destPath: string) => ipcRenderer.invoke('fs:move', sourcePath, destPath)
     },
   dialog: {
     openFile: () => ipcRenderer.invoke('dialog:openFile'),
@@ -17,6 +18,24 @@ try {
   project: {
     create: () => ipcRenderer.invoke('project:create')
   },
+  folder: {
+    create: (folderName: string, parentPath?: string) => ipcRenderer.invoke('folder:create', folderName, parentPath)
+  },
+  file: {
+    create: (fileName: string, parentPath: string) => ipcRenderer.invoke('file:create', fileName, parentPath)
+  },
+  terminal: {
+    start: (cwd: string) => ipcRenderer.invoke('terminal:start', cwd),
+    write: (data: string) => ipcRenderer.invoke('terminal:write', data),
+    resize: () => ipcRenderer.invoke('terminal:resize'),
+    onData: (callback: (data: string) => void) => {
+      ipcRenderer.on('terminal:data', (_, data) => callback(data))
+    },
+    onExit: (callback: (exitCode: number) => void) => {
+      ipcRenderer.on('terminal:exit', (_, exitCode) => callback(exitCode))
+    }
+  },
+  log: (message: string) => ipcRenderer.invoke('log', message)
     onMenuAction: (callback: (action: string) => void) => {
       const actions = ['menu:new-file', 'menu:open-file', 'menu:open-folder', 'menu:save', 'menu:save-as', 'menu:find', 'menu:replace', 'menu:toggle-sidebar', 'menu:toggle-terminal', 'menu:command-palette']
       const listeners: Record<string, any> = {}

@@ -1,3 +1,13 @@
+export interface EditorTab {
+  id: string
+  path: string | null
+  name: string
+  content: string
+  language: string
+  isModified: boolean
+  isNew: boolean
+}
+
 export interface FileSystemItem {
   name: string
   path: string
@@ -40,6 +50,7 @@ export interface ElectronAPI {
     readDir: (path: string) => Promise<{ success: boolean; items?: FileSystemItem[]; error?: string }>
     stat: (path: string) => Promise<{ success: boolean; stats?: any; error?: string }>
     exists: (path: string) => Promise<boolean>
+    move: (sourcePath: string, destPath: string) => Promise<{ success: boolean; error?: string }>
   }
   dialog: {
     openFile: () => Promise<string | null>
@@ -49,6 +60,20 @@ export interface ElectronAPI {
   project: {
     create: () => Promise<string | null>
   }
+  folder: {
+    create: (folderName: string, parentPath?: string) => Promise<string | null>
+  }
+  file: {
+    create: (fileName: string, parentPath: string) => Promise<string | null>
+  }
+  terminal: {
+    start: (cwd: string) => Promise<{ success: boolean; error?: string }>
+    write: (data: string) => Promise<{ success: boolean }>
+    resize: () => Promise<{ success: boolean }>
+    onData: (callback: (data: string) => void) => void
+    onExit: (callback: (exitCode: number) => void) => void
+  }
+  log: (message: string) => Promise<{ success: boolean }>
   onMenuAction: (callback: (action: string) => void) => void
 }
 

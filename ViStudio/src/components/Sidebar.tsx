@@ -1,15 +1,20 @@
-import React, { useState } from 'react'
+import React from 'react'
 import ProjectExplorer from './ProjectExplorer'
 
 interface SidebarProps {
   isOpen: boolean
   folderPath: string | null
+  refreshPath: string | null
   onOpenFolder: () => void
   onFileClick: (path: string) => void
   onProjectLoad: (projectPath: string) => void
+  onNewFile: (parentPath: string) => void
+  onNewFolder: (parentPath: string) => void
+  onRefreshPathConsumed: () => void
+  onRefresh: () => void
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, folderPath, onOpenFolder, onFileClick, onProjectLoad }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, folderPath, refreshPath, onOpenFolder, onFileClick, onProjectLoad, onNewFile, onNewFolder, onRefreshPathConsumed, onRefresh }) => {
   return React.createElement('div', {
     style: {
       width: isOpen ? '250px' : '0',
@@ -65,8 +70,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, folderPath, onOpenFolder, onF
       style: { flex: 1, overflowY: 'auto' }
     }, React.createElement(ProjectExplorer, {
       folderPath,
+      refreshPath,
       onFileClick,
-      onProjectLoad
+      onProjectLoad,
+      onNewFile,
+      onNewFolder,
+      onRefreshPathConsumed,
+      onRefresh
     }))
   ])
 }
