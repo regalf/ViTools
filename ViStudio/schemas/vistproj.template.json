@@ -1,0 +1,23 @@
+{
+  "$schema": "https://vistudio.dev/schemas/vistproj.schema.json",
+  "name": "MyProject",
+  "version": "1.0.0",
+  "description": "ViStudio project configuration",
+  "language": "typescript",
+  "compiler": {
+    "command": "tsc",
+    "args": ["--outDir", "./dist", "--sourceMap"]
+  },
+  "entryPoint": "src/main.ts",
+  "extensions": [],
+  "settings": {
+    "tabSize": 2,
+    "formatOnSave": true,
+    "theme": "vs-dark"
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".git"
+  ]
+}

@@ -1,6 +1,13 @@
 # Build directories
 **/builddir/
 
+# Electron/Vite
+dist-electron/
+dist/
+
+# Node
+node_modules/
+
 # IDE
 .vscode/
 .idea/
