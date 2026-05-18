@@ -94,6 +94,8 @@ An IDE built with **Electron + React + TypeScript**, powered by **Monaco Editor*
 
 Features:
 - **Monaco Editor** with syntax highlighting, bracket pairing, and minimap
+- **Multi-tab interface** — open multiple files with modified state indicators
+- **Integrated terminal** (xterm.js) for build/run commands
 - **File explorer** with expandable directory tree
 - **Project system** using `.vistproj` configuration files
 - **Create & open projects** with auto-generated structure
@@ -113,11 +115,10 @@ cd ViStudio
 - Electron (system-installed on Arch: `pacman -S electron`)
 
 #### Planned Features
-- Multiple tabs with modified state indicators
 - Plugin/extension API (`.vix` packages)
-- Integrated terminal (xterm.js)
 - Command palette (Ctrl+Shift+P)
 - Global search & replace with regex support
+- Git integration
 
 ## Project Structure
 ```
