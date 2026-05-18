@@ -77,12 +77,21 @@ void Window::setup_headerbar() {
     m_headerbar = Gtk::make_managed<Gtk::HeaderBar>();
 
     m_new_tab_button = Gtk::make_managed<Gtk::Button>();
-    m_new_tab_button->set_label("New");
+    m_new_tab_button->set_label("+");
+    m_new_tab_button->set_margin_start(5);
+    m_new_tab_button->set_margin_end(5);
+    auto* new_provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_string(new_provider, "button { font-size: 18px; font-weight: bold; padding: 2px 8px; }");
+    gtk_style_context_add_provider_for_display(
+        gtk_widget_get_display(GTK_WIDGET(m_new_tab_button->gobj())),
+        GTK_STYLE_PROVIDER(new_provider),
+        GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref(new_provider);
     m_new_tab_button->signal_clicked().connect(sigc::mem_fun(*this, &Window::new_file));
     m_headerbar->pack_start(*m_new_tab_button);
 
     m_menu_button = Gtk::make_managed<Gtk::Button>();
-    m_menu_button->set_label("Menu");
+    m_menu_button->set_label("☰");
 
     m_popover = Gtk::make_managed<Gtk::Popover>();
     m_popover->set_parent(*m_menu_button);
