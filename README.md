@@ -83,7 +83,7 @@ meson compile -C builddir
 | `Ctrl+Scroll` | Zoom font |
 | `Alt+Left/Right` | Switch tab |
 
-### [ViStudio](https://github.com/regalf/vistudio) ⚠️ *Experimental*
+### [ViStudio](https://github.com/regalf/vistudio)
 
 Un IDE moderno costruito con **Electron + React + TypeScript** basato su **Monaco Editor** (lo stesso di VS Code). Supporta tab multipli, terminale integrato (xterm.js), sistema estensioni con API sandboxata, command palette, ricerca globale, pannello impostazioni, temi UI, Git integration e tanto altro.
 
