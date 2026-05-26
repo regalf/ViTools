@@ -13,13 +13,9 @@ The goal? Build a complete Linux desktop development suite from scratch, one too
 ### Current
 - **[ViTerm](ViTerm/)** — A modern terminal emulator with tabs, drag & drop, zoom, and full customization
 - **[ViEdit](ViEdit/)** — A lightweight text editor with syntax highlighting, find/replace, draft recovery, and tabbed interface
-- **[ViStudio](ViStudio/)** ⚠️ — An Electron-based IDE with Monaco Editor, project management, and file explorer *(experimental — unstable, under active development)*
 
-### Planned
-- File manager integration
-- Debugger frontend
-- Git GUI client
-- And more...
+### Related Projects
+- **[ViStudio](https://github.com/regalf/vistudio)** — An Electron-based IDE with Monaco Editor, multi-tab support, and integrated terminal *(separate repo)*
 
 ---
 
@@ -87,39 +83,6 @@ meson compile -C builddir
 | `Ctrl+Scroll` | Zoom font |
 | `Alt+Left/Right` | Switch tab |
 
-### [ViStudio](ViStudio/) ⚠️ *Experimental*
-> **Warning**: ViStudio is under active development and may be unstable. Expect bugs, missing features, and potential crashes.
-
-An IDE built with **Electron + React + TypeScript**, powered by **Monaco Editor** (the same engine behind VS Code).
-
-Features:
-- **Monaco Editor** with syntax highlighting, bracket pairing, and minimap
-- **Multi-tab interface** — open multiple files with modified state indicators
-- **Integrated terminal** (xterm.js) for build/run commands
-- **File explorer** with expandable directory tree
-- **Project system** using `.vistproj` configuration files
-- **Create & open projects** with auto-generated structure
-- **Custom menu bar** (File, Edit, View, Help)
-- **Status bar** with cursor position, language, and encoding info
-- **Dark theme** inspired by VS Code
-
-#### ViStudio Quick Start
-```bash
-cd ViStudio
-./run.sh
-# Or: npm run electron:dev
-```
-
-#### Requirements
-- Node.js + npm
-- Electron (system-installed on Arch: `pacman -S electron`)
-
-#### Planned Features
-- Plugin/extension API (`.vix` packages)
-- Command palette (Ctrl+Shift+P)
-- Global search & replace with regex support
-- Git integration
-
 ## Project Structure
 ```
 ViTools/
@@ -128,18 +91,10 @@ ViTools/
 │   ├── data/            # GSettings schema
 │   ├── meson.build      # Build configuration
 │   └── AGENTS.md        # AI agent development guide
-├── ViEdit/              # Text editor (C++20, GTK4, GtkSourceView)
-│   ├── src/             # C++ source files
-│   ├── data/            # GSettings schema
-│   ├── meson.build      # Build configuration
-│   └── AGENTS.md        # AI agent development guide
-└── ViStudio/            # IDE (Electron, React, TypeScript, Monaco Editor) ⚠️
-    ├── electron/        # Main & preload scripts
-    ├── src/             # React components
-    ├── schemas/         # Project templates
-    ├── package.json     # Node dependencies
-    ├── vite.config.ts   # Vite + Electron config
-    ├── run.sh           # Dev launch script
+└── ViEdit/              # Text editor (C++20, GTK4, GtkSourceView)
+    ├── src/             # C++ source files
+    ├── data/            # GSettings schema
+    ├── meson.build      # Build configuration
     └── AGENTS.md        # AI agent development guide
 ```
 
