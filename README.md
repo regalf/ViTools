@@ -15,7 +15,7 @@ The goal? Build a complete Linux desktop development suite from scratch, one too
 - **[ViEdit](ViEdit/)** — A lightweight text editor with syntax highlighting, find/replace, draft recovery, and tabbed interface
 
 ### Related Projects
-- **[ViStudio](https://github.com/regalf/vistudio)** — un IDE Electron + React + TypeScript che sta diventando il nostro fratello maggiore con Monaco Editor, tab, terminale integrato, estensioni e tanto altro *(repo separata, vedi sotto per overview)*
+- **[ViStudio](https://github.com/regalf/vistudio)** — An Electron + React + TypeScript IDE with Monaco Editor, multi-tab support, integrated terminal, extension system, command palette, global search, and more *(separate repo, see below for overview)*
 
 ---
 
